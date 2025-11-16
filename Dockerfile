@@ -20,11 +20,11 @@ WORKDIR /app
 
 # Set default app and model-service ports
 ENV APP_PORT=8080
-ENV MODEL_URL=http://localhost:8081
+ENV MODEL_HOST=http://localhost:8081
 
 # Expose port 8080
 EXPOSE $APP_PORT
 
 COPY --from=builder /app/target/app.jar .
 
-ENTRYPOINT ["sh", "-c", "java -Dserver.port=$APP_PORT -Dmodel.url=$MODEL_URL -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=$APP_PORT -Dmodel.url=$MODEL_HOST -jar app.jar"]
