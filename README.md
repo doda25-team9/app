@@ -44,7 +44,7 @@ We use **QEMU emulation** (Strategy 1 from Docker's multi-platform documentation
 - No Dockerfile changes required
 - E.g. a Mac can emulate Intel processors to build AMD64 images and both architectures are built on a single machine
 
-When someone runs `docker pull`, Docker automatically downloads the correct image for their processor architecture.
+When users pull the image with `docker pull <image-name>`, Docker automatically downloads the correct version for their processor architecture.
 
 ### How to Build Multi-Architecture Images
 
@@ -96,9 +96,6 @@ This command:
 - Pushes both versions to a container registry (requires `--push` instead of `--load`)
 
 Note: You cannot use `--load` with multiple platforms. Multi-architecture images must be pushed to a registry (like GitHub Container Registry or Docker Hub) to be useful.
-
-
-When someone runs `docker pull app:latest`, Docker automatically downloads the correct version for their processor.
 
 
 ### F4 Testing
