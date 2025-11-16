@@ -1,0 +1,14 @@
+target/
+.mvn/
+*.class
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+*.iml
+*.log
+.settings/
+.project
+.classpath
+bin/
