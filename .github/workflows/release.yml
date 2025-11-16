@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - feature/compose-and-release-f7-f8
 
 jobs:
   build-and-push:
@@ -20,8 +22,8 @@ jobs:
       - name: Extract version from pom.xml
         id: version
         run: |
-          VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
