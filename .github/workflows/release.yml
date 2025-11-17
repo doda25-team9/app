@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - feature/compose-and-release-f7-f8
 
 jobs:
   build-and-push:
