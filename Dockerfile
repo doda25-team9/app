@@ -23,7 +23,7 @@ ENV APP_PORT=8080
 ENV MODEL_HOST=http://localhost:8081
 
 # Expose port 8080
-EXPOSE $APP_PORT
+EXPOSE 8080
 
 COPY --from=builder /app/target/app.jar .
 
