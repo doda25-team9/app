@@ -14,19 +14,30 @@ The frontend service can be started through running the `Main` class (e.g., in y
 
 The server runs on port 8080. Once its startup has finished, you can access [localhost:8080/sms](http://localhost:8080/sms) in your browser to interact with the application.
 
-## Docker Support (F3)
+## Docker Support (F3 & F6)
 
-Build the Docker image:
+**Build the Docker image:**
 ```bash
 docker build -t app:latest .
 ```
 
-Run the container:
+**Run the container:**
 ```bash
-docker run -p 8080:8080 -e MODEL_HOST=http://localhost:8081 app:latest
+docker run -p 8080:8080 app:latest
 ```
-
 Access the application at: http://localhost:8080/sms
+
+Or you can specify the environment variables:
+- `APP_PORT` - sets the port the frontend server runs on (default set to `8080`)
+- `MODEL_HOST` - specifies where backend service is running (default set to `http://localhost:8081`)
+
+For example
+ ```bash
+ docker run -p 8085:8085 -e APP_PORT=8085 -e MODEL_HOST=http://localhost:8082 app:latest
+ ```
+
+
+
 
 
 ## Multi-Architecture Support (F4)
@@ -104,3 +115,19 @@ Tested multi-architecture builds successfully:
 - Built for both amd64 and arm64 simultaneously
 - Verified AMD64 image runs on ARM64 Mac (with expected platform warning)
 - Confirmed ARM64 native build works without warnings
+
+### F5 Multi-Stage Builds
+
+Improved Docker image by dividing it into:
+- Builder stage: Maven and JDK 25
+- Final stage: slim JRE 25 Alpine
+
+This led to a drastic change in the image size
+
+| Build Type       | Image Size |
+|-----------------|------------|
+| Single-stage     | 896 MB     |
+| Multi-stage      | 347 MB     |
+
+*Screenshot Proof*
+![Image Size Comparison](./images/image_size_comparison.png)
