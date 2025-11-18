@@ -130,13 +130,14 @@ Whenever a new release is required, the version is updated only in this file, an
 
 ### How the Workflow Works
 
-When the workflow is triggered (e.g., by pushing a new git tag), the pipeline:
+This workflow is triggered whenever a new Git tag matching the pattern `v*` is pushed.
+Once triggered, the pipeline executes the following steps:
 
 1. Checks out the repository
 2. Reads the version from the `<version>` field in `pom.xml` using Maven tooling
 3. Builds a multi-architecture Docker image for `linux/amd64` and `linux/arm64`
 4. Tags the image using the extracted version:
-   `ghcr.io/doda25-team9/model-service:<version>`
+   `ghcr.io/doda25-team9/app:<version>`
 5. Also tags and updates the `latest` tag
 6. Pushes both tags to GHCR
 
