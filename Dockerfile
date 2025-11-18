@@ -27,4 +27,4 @@ EXPOSE 8080
 
 COPY --from=builder /app/target/app.jar .
 
-ENTRYPOINT ["sh", "-c", "java -Dserver.port=$APP_PORT -Dmodel.url=$MODEL_HOST -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=$APP_PORT -jar app.jar"]
