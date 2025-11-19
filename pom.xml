@@ -28,7 +28,7 @@
 		<dependency>
 			<groupId>com.doda25.team9</groupId>
 			<artifactId>lib-version</artifactId>
-			<version>0.1.0-test</version>
+			<version>1.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
