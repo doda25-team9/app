@@ -14,6 +14,148 @@ The frontend service can be started through running the `Main` class (e.g., in y
 
 The server runs on port 8080. Once its startup has finished, you can access [localhost:8080/sms](http://localhost:8080/sms) in your browser to interact with the application.
 
+## lib-version Integration (F1)
+
+This application integrates the [lib-version](https://github.com/doda25-team9/lib-version) library to track and display library versions at runtime.
+
+### What is lib-version?
+
+lib-version is a version-aware Maven library developed by DODA25 Team 9. It provides a simple `VersionUtil` class that allows applications to retrieve library version information at runtime.
+
+### How Versioning Works
+
+The lib-version library demonstrates a complete version management workflow:
+
+1. **Version Definition:** The version is defined in lib-version's `pom.xml`:
+```xml
+   <version>1.0.0-SNAPSHOT</version>
+```
+
+2. **Automated Release:** When a Git tag is pushed (e.g., `v1.0.0`):
+   - GitHub Actions workflow triggers
+   - Extracts version from the tag
+   - Updates `pom.xml` and `version.properties`
+   - Builds the JAR with version embedded in MANIFEST.MF
+   - Publishes to GitHub Packages
+
+3. **Runtime Detection:** The library includes the version in two places:
+   - JAR's `META-INF/MANIFEST.MF` (Implementation-Version)
+   - `version.properties` resource file (development fallback)
+
+4. **App Integration:** This app depends on a specific version in its `pom.xml`:
+```xml
+   <dependency>
+       <groupId>com.doda25.team9</groupId>
+       <artifactId>lib-version</artifactId>
+       <version>0.1.0-test</version>
+   </dependency>
+```
+
+5. **Runtime Display:** When the app starts, `VersionUtil.getVersion()` reads the version from the JAR and displays it:
+```
+   Using lib-version: 0.1.0-test
+```
+
+This demonstrates the complete lifecycle: **version definition → automated release → package distribution → runtime usage**.
+
+### Required Setup (First Time Only)
+
+**GitHub Packages requires authentication.** Configure it once, use it everywhere.
+
+#### Step 1: Create GitHub Personal Access Token
+
+1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens)
+2. Click **"Generate new token (classic)"**
+3. Configure token:
+   - Name: `maven-packages-access`
+   - Expiration: 90 days (or your preference)
+   - Required scope: ☑ `read:packages`
+4. Click **"Generate token"**
+5. **Copy the token** (starts with `ghp_`) - you won't see it again!
+
+#### Step 2: Configure Maven Settings
+
+Create or edit `~/.m2/settings.xml` on your computer:
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR_GITHUB_USERNAME</username>
+      <password>YOUR_GITHUB_TOKEN</password>
+    </server>
+  </servers>
+</settings>
+```
+
+**Replace:**
+- `YOUR_GITHUB_USERNAME` with your GitHub username
+- `YOUR_GITHUB_TOKEN` with the token you copied (starts with `ghp_`)
+
+**Important:** The `<id>github</id>` matches the repository ID in this app's `pom.xml`, allowing Maven to automatically use these credentials when downloading lib-version.
+
+**Note:** This is a one-time setup. Once configured, Maven can download any GitHub Packages dependency from any project.
+
+### What You'll See at Startup
+
+When the application starts, it displays the lib-version:
+```
+Using lib-version: 0.1.0-test
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+...
+```
+
+This proves:
+- The app successfully depends on lib-version as an external library
+- Maven downloaded lib-version from GitHub Packages
+- The library version is correctly embedded in the JAR
+- `VersionUtil.getVersion()` retrieves the version at runtime
+
+### Version Correspondence
+
+The version displayed (`0.1.0-test`) corresponds to:
+- **lib-version release:** Created when tag `v0.1.0-test` was pushed
+- **GitHub Packages:** Published as `com.doda25.team9:lib-version:0.1.0-test`
+- **This app's dependency:** Specified in `pom.xml` as `<version>0.1.0-test</version>`
+- **Runtime output:** Retrieved via `VersionUtil.getVersion()`
+
+This demonstrates the full integration from release to runtime usage.
+
+### Troubleshooting
+
+**Error: `401 Unauthorized` when building**
+
+Maven authentication is not configured.
+
+**Solution:** Follow steps 1 and 2 above to configure your GitHub token in `~/.m2/settings.xml`.
+
+**Error: `Could not find artifact com.doda25.team9:lib-version:jar:X.Y.Z`**
+
+The specified version doesn't exist in GitHub Packages.
+
+**Solution:** 
+- Check available versions: [lib-version packages](https://github.com/doda25-team9/lib-version/packages)
+- Verify the version in `pom.xml` matches an existing release
+- Common versions: `0.1.0-test` (test), `1.0.0` (stable)
+
+**Version shows "unknown"**
+
+The JAR is missing version information.
+
+**Solution:** This shouldn't happen with properly released versions from GitHub Packages. If it does, the lib-version release workflow may have failed.
+
+### For More Information
+
+- [lib-version repository](https://github.com/doda25-team9/lib-version) - Library source code
+- [lib-version releases](https://github.com/doda25-team9/lib-version/releases) - Available versions
+- [lib-version packages](https://github.com/doda25-team9/lib-version/packages) - Published artifacts
+
 ## Docker Support (F3 & F6)
 
 Build the Docker image:
