@@ -2,8 +2,15 @@ name: Release App Image
 
 on:
   push:
-    tags:
-      - "v*"
+    # tags:
+    #   - "v*"
+    branches:
+      # - main
+      - improvement/workflow-trigger-and-versioning-f8
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   build-and-push:
@@ -16,12 +23,39 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT }}
 
       - name: Extract version from pom.xml
         id: version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine release version
+        id: release
+        run: |
+          RAW=${{ steps.version.outputs.version }}
+          RELEASE="${RAW/-SNAPSHOT/}"
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Set pom.xml to release version
+        run: |
+          mvn versions:set \
+            -DnewVersion=${{ steps.release.outputs.release }} \
+            -DgenerateBackupPoms=false
+
+      - name: Commit release version
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git commit -am "Release ${{ steps.release.outputs.release }}"
+          git push origin
+
+      - name: Tag the release
+        run: |
+          git tag "v${{ steps.release.outputs.release }}-test"
+          git push origin --tags
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -44,5 +78,15 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/doda25-team9/app:${{ steps.version.outputs.VERSION }}
-            ghcr.io/doda25-team9/app:latest
+            ghcr.io/doda25-team9/app:test-${{ steps.release.outputs.release }}
+
+      - name: Bump to next development version
+        run: |
+          mvn -q build-helper:parse-version versions:set \
+            -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.$((${parsedVersion.incrementalVersion}+1))-SNAPSHOT \
+            -DgenerateBackupPoms=false
+
+      - name: Commit next snapshot version
+        run: |
+          git commit -am "Start next development iteration"
+          git push origin
