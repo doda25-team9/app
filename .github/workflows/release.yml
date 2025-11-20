@@ -2,11 +2,8 @@ name: Release App Image
 
 on:
   push:
-    # tags:
-    #   - "v*"
     branches:
-      # - main
-      - improvement/workflow-trigger-and-versioning-f8
+      - main
 
 permissions:
   contents: write
