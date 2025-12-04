@@ -54,15 +54,13 @@ public class FrontendController {
 
     private void initializeMetrics() {
         metricsRegistry.addCounter("sms_requests_total",
-                new Counter( null, "sms_requests_total", "Total number of SMS prediction requests received"));
+                new Counter("sms_requests_total", "Total number of SMS prediction requests received"));
         metricsRegistry.addGauge("active_users",
                 new Gauge(null, "active_users", "Current number of active users"));
         metricsRegistry.addHistogram("request_duration", new Histogram(List.of(0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0, 5.0),
                 "request_duration", "Histogram of request durations in seconds"));
-        metricsRegistry.addCounter("spam_predictions_total",
-                new Counter( null, "spam_predictions_total", "Total number of SMS predicted as spam"));
-        metricsRegistry.addCounter("ham_predictions_total",
-                new Counter( null, "ham_predictions_total", "Total number of SMS predicted as ham"));
+        metricsRegistry.addCounter("predictions_result_total",
+                new Counter( "predictions_result_total", "Total number of SMS predictions with result"));
         metricsRegistry.addHistogram("sms_length", new Histogram(List.of(10.0, 20.0, 30.0, 40.0, 50.0, 100.0, 200.0, 500.0),
                 "sms_length", "Histogram of SMS lengths in characters"));
     }
@@ -108,7 +106,7 @@ public class FrontendController {
     }
 
     private void recordRequestMetrics(Sms sms) {
-        metricsRegistry.getCounter("sms_requests_total").increment();
+        metricsRegistry.getCounter("sms_requests_total").increment("endpoint", "/sms");
         metricsRegistry.getGauge("active_users").increment();
         metricsRegistry.getHistogram("sms_length").record(sms.sms.length());
     }
@@ -121,9 +119,9 @@ public class FrontendController {
         metricsRegistry.getGauge("active_users").decrement();
 
         if (sms.result.equalsIgnoreCase("spam")) {
-            metricsRegistry.getCounter("spam_predictions_total").increment();
+            metricsRegistry.getCounter("predictions_result_total").increment("result", "spam");
         } else if (sms.result.equalsIgnoreCase("ham")) {
-            metricsRegistry.getCounter("ham_predictions_total").increment();
+            metricsRegistry.getCounter("predictions_result_total").increment("result", "ham");
         }
     }
 }
