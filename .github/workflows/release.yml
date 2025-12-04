@@ -44,5 +44,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/doda25-team9/app:${{ steps.version.outputs.VERSION }}
+            ghcr.io/doda25-team9/app:${{ steps.version.outputs.version }}
             ghcr.io/doda25-team9/app:latest
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            GITHUB_ACTOR=${{ github.actor }}
