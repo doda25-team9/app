@@ -2,7 +2,12 @@ package frontend.ctrl;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
+import frontend.metrics.MetricsRegistry;
+import frontend.metrics.types.Counter;
+import frontend.metrics.types.Gauge;
+import frontend.metrics.types.Histogram;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
@@ -21,13 +26,15 @@ import jakarta.servlet.http.HttpServletRequest;
 public class FrontendController {
 
     private String modelHost;
-
     private RestTemplateBuilder rest;
+    private final MetricsRegistry metricsRegistry;
 
-    public FrontendController(RestTemplateBuilder rest, Environment env) {
+    public FrontendController(RestTemplateBuilder rest, Environment env, MetricsRegistry metricsRegistry) {
         this.rest = rest;
         this.modelHost = env.getProperty("MODEL_HOST");
+        this.metricsRegistry = metricsRegistry;
         assertModelHost();
+        initializeMetrics();
     }
 
     private void assertModelHost() {
@@ -45,6 +52,20 @@ public class FrontendController {
         }
     }
 
+    private void initializeMetrics() {
+        metricsRegistry.addCounter("sms_requests_total",
+                new Counter("sms_requests_total", "Total number of SMS prediction requests received"));
+        metricsRegistry.addGauge("active_users",
+                new Gauge(null, "active_users", "Current number of active users"));
+        metricsRegistry.addHistogram("request_duration", new Histogram(List.of(0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0, 5.0),
+                "request_duration", "Histogram of request durations in seconds"));
+        metricsRegistry.addCounter("predictions_result_total",
+                new Counter( "predictions_result_total", "Total number of SMS predictions with result"));
+        metricsRegistry.addHistogram("sms_length", new Histogram(List.of(10.0, 20.0, 30.0, 40.0, 50.0, 100.0, 200.0, 500.0),
+                "sms_length", "Histogram of SMS lengths in characters"));
+    }
+
+
     @GetMapping("")
     public String redirectToSlash(HttpServletRequest request) {
         // relative REST requests in JS will end up on / and not on /sms
@@ -61,7 +82,15 @@ public class FrontendController {
     @ResponseBody
     public Sms predict(@RequestBody Sms sms) {
         System.out.printf("Requesting prediction for \"%s\" ...\n", sms.sms);
+        recordRequestMetrics();
+
+        long startTime = System.currentTimeMillis();
         sms.result = getPrediction(sms);
+        long durationMs = System.currentTimeMillis() - startTime;
+
+        recordPredictionMetrics(durationMs);
+        recordResultMetrics(sms);
+
         System.out.printf("Prediction: %s\n", sms.result);
         return sms;
     }
@@ -73,6 +102,28 @@ public class FrontendController {
             return c.getBody().result.trim();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void recordRequestMetrics() {
+        metricsRegistry.getCounter("sms_requests_total").increment("endpoint", "/sms");
+        metricsRegistry.getGauge("active_users").increment();
+
+    }
+
+    private void recordPredictionMetrics(long durationMs) {
+        metricsRegistry.getHistogram("request_duration").record("endpoint", "/sms", durationMs / 1000.0);
+    }
+
+    private void recordResultMetrics(Sms sms) {
+        metricsRegistry.getGauge("active_users").decrement();
+
+        if (sms.result.equalsIgnoreCase("spam")) {
+            metricsRegistry.getCounter("predictions_result_total").increment("result", "spam");
+            metricsRegistry.getHistogram("sms_length").record("result", "spam", sms.sms.length());
+        } else if (sms.result.equalsIgnoreCase("ham")) {
+            metricsRegistry.getCounter("predictions_result_total").increment("result", "ham");
+            metricsRegistry.getHistogram("sms_length").record("result", "ham", sms.sms.length());
         }
     }
 }
