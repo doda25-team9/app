@@ -26,6 +26,8 @@ public class MetricsController {
         metricsRegistry.histograms.values().forEach(histogram -> {
             sb.append(histogram.export());
         });
+
+        sb.append("# EOF\n");
         return sb.toString();
     }
 
