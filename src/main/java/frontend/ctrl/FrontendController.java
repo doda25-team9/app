@@ -82,7 +82,7 @@ public class FrontendController {
     @ResponseBody
     public Sms predict(@RequestBody Sms sms) {
         System.out.printf("Requesting prediction for \"%s\" ...\n", sms.sms);
-        recordRequestMetrics(sms);
+        recordRequestMetrics();
 
         long startTime = System.currentTimeMillis();
         sms.result = getPrediction(sms);
@@ -105,14 +105,14 @@ public class FrontendController {
         }
     }
 
-    private void recordRequestMetrics(Sms sms) {
+    private void recordRequestMetrics() {
         metricsRegistry.getCounter("sms_requests_total").increment("endpoint", "/sms");
         metricsRegistry.getGauge("active_users").increment();
-        metricsRegistry.getHistogram("sms_length").record(sms.sms.length());
+
     }
 
     private void recordPredictionMetrics(long durationMs) {
-        metricsRegistry.getHistogram("request_duration").record(durationMs / 1000.0);
+        metricsRegistry.getHistogram("request_duration").record("endpoint", "/sms", durationMs / 1000.0);
     }
 
     private void recordResultMetrics(Sms sms) {
@@ -120,8 +120,10 @@ public class FrontendController {
 
         if (sms.result.equalsIgnoreCase("spam")) {
             metricsRegistry.getCounter("predictions_result_total").increment("result", "spam");
+            metricsRegistry.getHistogram("sms_length").record("result", "spam", sms.sms.length());
         } else if (sms.result.equalsIgnoreCase("ham")) {
             metricsRegistry.getCounter("predictions_result_total").increment("result", "ham");
+            metricsRegistry.getHistogram("sms_length").record("result", "ham", sms.sms.length());
         }
     }
 }
