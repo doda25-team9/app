@@ -22,7 +22,7 @@ public class Histogram {
     }
 
     public void record(double value) {
-        sum.addAndGet((long) value * 1000);
+        sum.addAndGet((long) (value * 1000));
         for (int i = 0; i < buckets.size(); i++) {
             if (value <= buckets.get(i)) {
                 bucketCounts[i].incrementAndGet();
