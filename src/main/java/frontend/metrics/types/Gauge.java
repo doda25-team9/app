@@ -34,6 +34,13 @@ public class Gauge {
                 .get();
     }
 
+    public void set(String labelName, String labelValue, int newValue) {
+        labelValues.putIfAbsent(labelName, new ConcurrentHashMap<>());
+        Map<String, AtomicInteger> values = labelValues.get(labelName);
+        values.putIfAbsent(labelValue, new AtomicInteger(0));
+        values.get(labelValue).set(newValue);
+    }
+
     public String export() {
         StringBuilder sb = new StringBuilder();
         sb.append("# HELP ").append(metricName).append(" ").append(help).append("\n");
