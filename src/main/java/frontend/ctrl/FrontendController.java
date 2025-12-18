@@ -56,7 +56,7 @@ public class FrontendController {
         metricsRegistry.addCounter("sms_requests_total",
                 new Counter("sms_requests_total", "Total number of SMS prediction requests received"));
         metricsRegistry.addGauge("active_users",
-                new Gauge(null, "active_users", "Current number of active users"));
+                new Gauge("active_users", "Current number of active users"));
         metricsRegistry.addHistogram("request_duration", new Histogram(List.of(0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0, 5.0),
                 "request_duration", "Histogram of request durations in seconds"));
         metricsRegistry.addCounter("predictions_result_total",
@@ -107,7 +107,7 @@ public class FrontendController {
 
     private void recordRequestMetrics() {
         metricsRegistry.getCounter("sms_requests_total").increment("endpoint", "/sms");
-        metricsRegistry.getGauge("active_users").increment();
+        metricsRegistry.getGauge("active_users").increment("endpoint", "/sms");
 
     }
 
@@ -116,7 +116,7 @@ public class FrontendController {
     }
 
     private void recordResultMetrics(Sms sms) {
-        metricsRegistry.getGauge("active_users").decrement();
+        metricsRegistry.getGauge("active_users").decrement("endpoint", "/sms");
 
         if (sms.result.equalsIgnoreCase("spam")) {
             metricsRegistry.getCounter("predictions_result_total").increment("result", "spam");
