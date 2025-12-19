@@ -56,13 +56,17 @@ public class FrontendController {
         metricsRegistry.addCounter("sms_requests_total",
                 new Counter("sms_requests_total", "Total number of SMS prediction requests received"));
         metricsRegistry.addGauge("active_users",
-                new Gauge(null, "active_users", "Current number of active users"));
+                new Gauge("active_users", "Current number of active users"));
         metricsRegistry.addHistogram("request_duration", new Histogram(List.of(0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0, 5.0),
                 "request_duration", "Histogram of request durations in seconds"));
         metricsRegistry.addCounter("predictions_result_total",
                 new Counter( "predictions_result_total", "Total number of SMS predictions with result"));
         metricsRegistry.addHistogram("sms_length", new Histogram(List.of(10.0, 20.0, 30.0, 40.0, 50.0, 100.0, 200.0, 500.0),
                 "sms_length", "Histogram of SMS lengths in characters"));
+        metricsRegistry.addGauge("last_request_duration_ms",
+                new Gauge("last_request_duration_ms", "Duration of the last request in milliseconds"));
+        metricsRegistry.addGauge("last_sms_length_characters",
+                new Gauge("last_sms_length_characters", "Length of the last SMS in characters"));
     }
 
 
@@ -82,7 +86,7 @@ public class FrontendController {
     @ResponseBody
     public Sms predict(@RequestBody Sms sms) {
         System.out.printf("Requesting prediction for \"%s\" ...\n", sms.sms);
-        recordRequestMetrics();
+        recordRequestMetrics(sms);
 
         long startTime = System.currentTimeMillis();
         sms.result = getPrediction(sms);
@@ -105,18 +109,20 @@ public class FrontendController {
         }
     }
 
-    private void recordRequestMetrics() {
+    private void recordRequestMetrics(Sms sms) {
         metricsRegistry.getCounter("sms_requests_total").increment("endpoint", "/sms");
-        metricsRegistry.getGauge("active_users").increment();
+        metricsRegistry.getGauge("active_users").increment("endpoint", "/sms");
+        metricsRegistry.getGauge("last_sms_length_characters").set("endpoint", "/sms", sms.sms.length());
 
     }
 
     private void recordPredictionMetrics(long durationMs) {
         metricsRegistry.getHistogram("request_duration").record("endpoint", "/sms", durationMs / 1000.0);
+        metricsRegistry.getGauge("last_request_duration_ms").set("endpoint", "/sms", (int) durationMs);
     }
 
     private void recordResultMetrics(Sms sms) {
-        metricsRegistry.getGauge("active_users").decrement();
+        metricsRegistry.getGauge("active_users").decrement("endpoint", "/sms");
 
         if (sms.result.equalsIgnoreCase("spam")) {
             metricsRegistry.getCounter("predictions_result_total").increment("result", "spam");
