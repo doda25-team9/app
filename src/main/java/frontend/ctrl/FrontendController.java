@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import frontend.data.Sms;
 import jakarta.servlet.http.HttpServletRequest;
 
+import com.doda25.team9.libversion.VersionUtil; 
+
 @Controller
 @RequestMapping(path = "/sms")
 public class FrontendController {
@@ -79,6 +81,8 @@ public class FrontendController {
     @GetMapping("/")
     public String index(Model m) {
         m.addAttribute("hostname", modelHost);
+        m.addAttribute("version", VersionUtil.getVersion());
+
         return "sms/index";
     }
 
@@ -89,7 +93,7 @@ public class FrontendController {
         recordRequestMetrics(sms);
 
         long startTime = System.currentTimeMillis();
-        sms.result = getPrediction(sms);
+        sms = getPrediction(sms);
         long durationMs = System.currentTimeMillis() - startTime;
 
         recordPredictionMetrics(durationMs);
@@ -99,11 +103,13 @@ public class FrontendController {
         return sms;
     }
 
-    private String getPrediction(Sms sms) {
+    private Sms getPrediction(Sms sms) {
         try {
             var url = new URI(modelHost + "/predict");
             var c = rest.build().postForEntity(url, sms, Sms.class);
-            return c.getBody().result.trim();
+            System.out.println(c.getBody().toString());
+            System.out.println(c.getBody().classifier);
+            return c.getBody();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

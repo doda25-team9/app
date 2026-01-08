@@ -28,8 +28,7 @@ button {
 .incorrect { color: rgb(224, 64, 64); padding: 0}
 .error {background: rgb(224, 64, 64); color: white; padding: 3px 10px; border-radius: 4px; }
 
-#hostname {
-	font-size: 10px;
+.app-info {
 	color: #ccc;
 	position: absolute;
 	right: 10px;
