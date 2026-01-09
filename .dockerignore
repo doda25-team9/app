@@ -1,4 +1,6 @@
-target/
+# Exclude target/ but allow app.jar for Docker build
+target/*
+!target/app.jar
 .mvn/
 *.class
 .git
