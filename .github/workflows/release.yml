@@ -52,6 +52,11 @@ jobs:
         run: mvn clean package -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Rename JAR to app.jar
+        run: |
+          mv target/*.jar target/app.jar
+          ls -lh target/app.jar
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
