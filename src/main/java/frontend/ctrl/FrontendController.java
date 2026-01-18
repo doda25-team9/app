@@ -58,7 +58,7 @@ public class FrontendController {
         metricsRegistry.addCounter("sms_requests_total",
                 new Counter("sms_requests_total", "Total number of SMS prediction requests received"));
         metricsRegistry.addGauge("inflight_requests",
-                new Gauge(null, "inflight_requests", "How many requests are currently being processed"));
+                new Gauge("inflight_requests", "How many requests are currently being processed"));
         metricsRegistry.addHistogram("request_duration", new Histogram(List.of(0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0, 5.0),
                 "request_duration", "Histogram of request durations in seconds"));
         metricsRegistry.addCounter("predictions_result_total",
