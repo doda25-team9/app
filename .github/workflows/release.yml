@@ -1,21 +1,26 @@
-name: Release App Image
+name: Test Release Workflow
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Required for pushing back commits
+
+      - name: Configure Git Identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Extract version from pom.xml
         id: version
@@ -23,7 +28,6 @@ jobs:
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # Setup Java
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
@@ -31,7 +35,6 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # Configure Maven for GitHub Packages
       - name: Configure Maven settings
         run: |
           mkdir -p ~/.m2
@@ -47,7 +50,17 @@ jobs:
           </settings>
           EOF
 
-      # Build JAR with Maven (Before Docker build)
+      - name: Remove SNAPSHOT from pom.xml
+        run: |
+          mvn build-helper:parse-version versions:set \
+            -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.incrementalVersion} \
+            -DgenerateBackupPoms=false
+          
+          # Extract the clean version for the Docker tag
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Prepared release version: $VERSION"
+
       - name: Build with Maven
         run: mvn clean package -DskipTests
         env:
@@ -77,7 +90,34 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: false # Set to false for testing
           tags: |
-            ghcr.io/doda25-team9/app:${{ steps.version.outputs.version }}
+            ghcr.io/doda25-team9/app:${{ env.RELEASE_VERSION }}
             ghcr.io/doda25-team9/app:latest
+
+      - name: Create Git Tag & Push Commit
+        run: |
+          git add pom.xml
+          git commit -m "chore: release version ${{ env.RELEASE_VERSION }}"
+          # We don't push the tag to avoid polluting the tags list, but we push the commit
+          # git tag -a "v${{ env.RELEASE_VERSION }}" -m "Release v${{ env.RELEASE_VERSION }}"
+          
+          # Push specifically to your branch
+          git push origin HEAD:improvement/f8-snapshot-versioning
+
+      - name: Bump Version to Next SNAPSHOT
+        run: |
+          mvn build-helper:parse-version versions:set \
+            -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion}-SNAPSHOT \
+            -DgenerateBackupPoms=false
+            
+          NEXT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Next development version: $NEXT_VERSION"
+
+      - name: Push Next Dev Version
+        run: |
+          git add pom.xml
+          git commit -m "chore: bump to next development version"
+          
+          # Push specifically to your branch
+          git push origin HEAD:improvement/f8-snapshot-versioning
