@@ -100,10 +100,8 @@ jobs:
         run: |
           git add pom.xml
           git commit -m "chore: release version ${{ env.RELEASE_VERSION }}"
-          # We don't push the tag to avoid polluting the tags list, but we push the commit
-          # git tag -a "v${{ env.RELEASE_VERSION }}" -m "Release v${{ env.RELEASE_VERSION }}"
+          git tag -a "v${{ env.RELEASE_VERSION }}" -m "Release v${{ env.RELEASE_VERSION }}"
           
-          # Push specifically to your branch
           git push origin improvement/f8-snapshot-versioning
 
       - name: Bump Version to Next SNAPSHOT
@@ -120,5 +118,4 @@ jobs:
           git add pom.xml
           git commit -m "chore: bump to next development version"
           
-          # Push specifically to your branch
           git push origin improvement/f8-snapshot-versioning
