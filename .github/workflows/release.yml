@@ -15,7 +15,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Required for pushing back commits
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
 
       - name: Configure Git Identity
         run: |
