@@ -2,6 +2,9 @@ name: Test Release Workflow
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - improvement/f8-snapshot-versioning
 
 jobs:
   build-and-push:
@@ -104,7 +107,7 @@ jobs:
           # git tag -a "v${{ env.RELEASE_VERSION }}" -m "Release v${{ env.RELEASE_VERSION }}"
           
           # Push specifically to your branch
-          git push origin HEAD:improvement/f8-snapshot-versioning
+          git push origin improvement/f8-snapshot-versioning
 
       - name: Bump Version to Next SNAPSHOT
         run: |
@@ -121,4 +124,4 @@ jobs:
           git commit -m "chore: bump to next development version"
           
           # Push specifically to your branch
-          git push origin HEAD:improvement/f8-snapshot-versioning
+          git push origin improvement/f8-snapshot-versioning
