@@ -31,12 +31,13 @@ The lib-version library demonstrates a complete version management workflow:
    <version>1.0.0-SNAPSHOT</version>
 ```
 
-2. **Automated Release:** When a Git tag is pushed (e.g., `v1.0.0`):
-   - GitHub Actions workflow triggers
-   - Extracts version from the tag
-   - Updates `pom.xml` and `version.properties`
+2. **Automated Release:** When code is pushed to the main branch:
+   - GitHub Actions workflow triggers automatically
+   - Extracts version from `pom.xml`
+   - Creates git commits and tags
    - Builds the JAR with version embedded in MANIFEST.MF
    - Publishes to GitHub Packages
+   - Auto-bumps to next SNAPSHOT version
 
 3. **Runtime Detection:** The library includes the version in two places:
    - JAR's `META-INF/MANIFEST.MF` (Implementation-Version)
@@ -120,7 +121,7 @@ This proves:
 ### Version Correspondence
 
 The version displayed (`0.1.0-test`) corresponds to:
-- **lib-version release:** Created when tag `v0.1.0-test` was pushed
+- **lib-version release:** Created when the workflow ran
 - **GitHub Packages:** Published as `com.doda25.team9:lib-version:0.1.0-test`
 - **This app's dependency:** Specified in `pom.xml` as `<version>0.1.0-test</version>`
 - **Runtime output:** Retrieved via `VersionUtil.getVersion()`
@@ -159,13 +160,11 @@ The JAR is missing version information.
 ## Docker Support (F3 & F6)
 
 Build the Docker image:
-
 ```bash
 docker build -t app:latest .
 ```
 
 Run the container:
-
 ```bash
 docker run -p 8080:8080 app:latest
 ```
@@ -178,7 +177,6 @@ Or you can specify the environment variables:
 - `MODEL_HOST` - specifies where backend service is running (default set to `http://localhost:8081`)
 
 For example
-
 ```bash
 docker run -p 8085:8085 -e APP_PORT=8085 -e MODEL_HOST=http://localhost:8082 app:latest
 ```
@@ -211,7 +209,6 @@ When users pull the image with `docker pull <image-name>`, Docker automatically 
 **Setup (first time only):**
 
 Before building multi-architecture images, create a specialized builder:
-
 ```bash
 docker buildx create --name multiarch-builder --use
 docker buildx inspect --bootstrap
@@ -224,7 +221,6 @@ You only need to run these commands once on your machine. After this, the builde
 **For Development & Testing:**
 
 When working locally and testing your changes, build for your computer's architecture:
-
 ```bash
 # On Apple Silicon Macs (M1/M2/M3)
 docker buildx build --platform linux/arm64 -t app:latest --load .
@@ -236,7 +232,6 @@ docker buildx build --platform linux/amd64 -t app:latest --load .
 The `--load` flag makes the image available to run with `docker run` on your local machine. You can only load one architecture at a time because your computer can only run its native architecture efficiently.
 
 **Then run it:**
-
 ```bash
 docker run -p 8080:8080 -e MODEL_HOST=http://localhost:8081 app:latest
 ```
@@ -246,7 +241,6 @@ docker run -p 8080:8080 -e MODEL_HOST=http://localhost:8081 app:latest
 **For Production/Release:**
 
 When releasing the application, build for both architectures:
-
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t app:latest --push
 ```
@@ -286,42 +280,50 @@ _Screenshot Proof_
 
 ## Automated Container Image Releases (F8)
 
-The repository includes a Github Actions workflow (`.github/workflows/release.yml`) that automatically builds and publishes versioned container images of the app repository to the GitHub Container Registry (GHCR).
+The repository includes a GitHub Actions workflow (`.github/workflows/release.yml`) that automatically builds and publishes versioned container images to the GitHub Container Registry (GHCR) whenever code is pushed to the main branch.
 
 ### Single Source of Truth for Versions
 
-The version of the apploication is defined in the project's Maven metadata:
-`pom.xml`
-Example:
-`<version>0.0.1-SNAPSHOT</version>`
+The version of the application is defined in the project's Maven metadata (`pom.xml`). For example:
+```xml
+<version>0.0.1-SNAPSHOT</version>
+```
 
-This `version` field acts as the single source of truth for the application's version.
-Whenever a new release is required, the version is updated only in this file, and the workflow handles the rest.
+This `<version>` field acts as the single source of truth for the application's version. The workflow automatically manages version updates, so manual version changes in `pom.xml` are not required for releases.
 
 ### How the Workflow Works
 
-This workflow is triggered whenever a new Git tag matching the pattern `v*` is pushed.
-Once triggered, the pipeline executes the following steps:
+The workflow is triggered automatically when code is pushed to the `main` branch. It includes skip-ci protection to prevent infinite loops. The pipeline executes the following steps:
 
-1. Checks out the repository
-2. Reads the version from the `<version>` field in `pom.xml` using Maven tooling
-3. Builds a multi-architecture Docker image for `linux/amd64` and `linux/arm64`
-4. Tags the image using the extracted version:
-   `ghcr.io/doda25-team9/app:<version>`
-5. Also tags and updates the `latest` tag
-6. Pushes both tags to GHCR
+1. **Check for skip-ci**: Skips execution if the commit message contains `[skip ci]`
+2. **Read current version**: Extracts version from `pom.xml` (e.g., `0.0.1-SNAPSHOT`)
+3. **Prepare release version**: Removes `-SNAPSHOT` suffix (e.g., `0.0.1`)
+4. **Update pom.xml**: Sets the release version
+5. **Create git commit**: Commits the release version change
+6. **Create git tag**: Tags the commit (e.g., `v0.0.1`)
+7. **Build application**: Compiles the Java application with Maven
+8. **Build Docker image**: Creates multi-architecture image for `linux/amd64` and `linux/arm64`
+9. **Tag and push image**: 
+   - Tags: `ghcr.io/doda25-team9/app:<version>` and `ghcr.io/doda25-team9/app:latest`
+   - Pushes both tags to GHCR
+10. **Bump version**: Increments patch version and adds `-SNAPSHOT` (e.g., `0.0.2-SNAPSHOT`)
+11. **Commit and push**: Commits version bump with `[skip ci]` tag to prevent re-triggering
 
 ### Viewing Published Images
 
 Released images are available at:
-`https://github.com/doda25-team9/app/pkgs/container/app`
+https://github.com/doda25-team9/app/pkgs/container/app
 
 ### Running a Released Image
 
 To run a published release:
-
-```
+```bash
 docker pull ghcr.io/doda25-team9/app:<version>
 docker run -p 8080:8080 -e MODEL_HOST=http://localhost:8081 ghcr.io/doda25-team9/app:<version>
+```
 
+Or use the latest version:
+```bash
+docker pull ghcr.io/doda25-team9/app:latest
+docker run -p 8080:8080 -e MODEL_HOST=http://localhost:8081 ghcr.io/doda25-team9/app:latest
 ```
